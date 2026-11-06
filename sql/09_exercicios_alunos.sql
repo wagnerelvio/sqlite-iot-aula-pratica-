@@ -1,0 +1,14 @@
+-- Exercícios propostos: escreva seus próprios comandos abaixo.
+-- Antes de começar: execute as atividades 01 e 02 (ou 00_preparacao_rapida.sql).
+-- 1. Listar nome e localização dos dispositivos.
+-- 2. Consultar temperaturas superiores a 20 graus Celsius.
+-- 3. Ordenar leituras por umidade crescente.
+-- 4. Contar leituras por dispositivo.
+-- 5. Calcular a temperatura média geral.
+-- 6. Encontrar dispositivos com temperatura máxima superior a 25 graus Celsius.
+-- 7. Inserir um dispositivo com nome ESP32-Lab-04.
+-- 8. Inserir três medições para o novo dispositivo.
+-- 9. Calcular a temperatura média desse quarto dispositivo.
+-- 10. Mostrar a última medição de cada dispositivo.
+
+-- Soluções do aluno:

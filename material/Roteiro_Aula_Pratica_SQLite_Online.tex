@@ -1,0 +1,402 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,urlcolor=blue!60!black,linkcolor=blue!50!black}
+\setlist[enumerate]{itemsep=2pt,topsep=4pt}
+\setlist[itemize]{itemsep=2pt,topsep=4pt}
+\definecolor{sqlbg}{RGB}{246,248,251}
+\definecolor{sqlblue}{RGB}{25,66,129}
+\definecolor{sqlgreen}{RGB}{33,110,70}
+\lstdefinestyle{sqlstyle}{
+ language=SQL,
+ basicstyle=\ttfamily\footnotesize,
+ keywordstyle=\color{sqlblue}\bfseries,
+ commentstyle=\color{sqlgreen},
+ stringstyle=\color{red!55!black},
+ backgroundcolor=\color{sqlbg},
+ frame=single,
+ rulecolor=\color{black!15},
+ breaklines=true,
+ breakatwhitespace=false,
+ showstringspaces=false,
+ columns=fullflexible,
+ keepspaces=true,
+ tabsize=2,
+ xleftmargin=3pt,
+ xrightmargin=3pt,
+ literate={á}{{\'a}}1 {à}{{\`a}}1 {â}{{\^a}}1 {ã}{{\~a}}1
+          {é}{{\'e}}1 {ê}{{\^e}}1 {í}{{\'i}}1
+          {ó}{{\'o}}1 {ô}{{\^o}}1 {õ}{{\~o}}1
+          {ú}{{\'u}}1 {ç}{{\c c}}1
+          {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1
+          {Ó}{{\'O}}1 {Ú}{{\'U}}1 {Ç}{{\c C}}1
+}
+\lstset{style=sqlstyle}
+\newcommand{\atividade}[2]{\section{Atividade #1: #2}}
+\newcommand{\questoes}[1]{\noindent\textbf{Questões para análise:} #1\par}
+\begin{document}
+\begin{center}
+{\Large\bfseries ROTEIRO DE AULA PRÁTICA}\par\vspace{4pt}
+{\large\bfseries Banco de Dados SQL com SQLite Online}\par\vspace{5pt}
+\textbf{Tema:} Sistema de Monitoramento IoT\par
+\end{center}
+\vspace{6pt}
+\noindent\textbf{Disciplina:} Banco de Dados\hfill\textbf{Carga horária sugerida:} 3 horas-aula\par
+\noindent\textbf{Modalidade:} Individual ou em duplas\par
+\noindent\textbf{Ambiente:} \url{https://sqliteonline.com/}\par
+\noindent\textbf{Aluno(a):} \rule{9cm}{0.4pt}\quad\textbf{Data:} \rule{2.4cm}{0.4pt}
+
+\section{Apresentação}
+Este roteiro tem como base o documento \emph{Guia Prático de SQL para SQLite: Sistema de Monitoramento IoT}, disponibilizado para a aula. O exemplo utiliza uma base com dispositivos e leituras de sensores, explorando DDL, DML, DQL, junções, agregações, expressões de tabela comuns (CTEs) e funções de janela. Foram acrescentados exercícios de atualização, exclusão e controle de transações como ampliação didática.
+
+\section{Objetivos de aprendizagem}
+\begin{enumerate}
+\item Criar tabelas e identificar tipos de dados, chaves primárias e estrangeiras.
+\item Inserir, consultar, atualizar e excluir registros com comandos SQL.
+\item Inspecionar a estrutura das tabelas no SQLite Online.
+\item Aplicar filtros, ordenação, junções e funções de agregação.
+\item Explorar CTEs e funções de janela em dados históricos.
+\item Interpretar dados simulados de monitoramento IoT.
+\end{enumerate}
+
+\section{Modelo de dados e preparação}
+A tabela \texttt{dispositivos} armazena o cadastro dos equipamentos (\texttt{id}, \texttt{nome}, \texttt{localizacao}, \texttt{status}). A tabela \texttt{leituras} registra cada medição (\texttt{id}, \texttt{dispositivo\_id}, \texttt{temperatura}, \texttt{umidade}, \texttt{timestamp}). A relação é de \textbf{um para muitos}: um dispositivo pode possuir diversas leituras.
+
+\begin{enumerate}
+\item Acesse \url{https://sqliteonline.com/}.
+\item Confirme que o mecanismo selecionado é \textbf{SQLite}.
+\item Utilize um banco de dados de teste e localize o editor SQL e o botão de execução (\emph{Run}).
+\item Execute cada bloco na ordem indicada. Para evitar erros de tabela já existente, não repita os comandos \texttt{CREATE TABLE} depois da primeira execução.
+\end{enumerate}
+
+\atividade{1}{Criação das tabelas (DDL)}
+\textbf{Objetivo:} utilizar \texttt{CREATE TABLE}, tipos de dados e restrições de integridade.
+
+\subsection*{Passo 1: criar a tabela de dispositivos}
+\begin{lstlisting}
+CREATE TABLE dispositivos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    localizacao TEXT NOT NULL,
+    status TEXT CHECK (
+        status IN ('ATIVO', 'MANUTENCAO', 'INATIVO')
+    ) DEFAULT 'ATIVO'
+);
+\end{lstlisting}
+
+\subsection*{Passo 2: criar a tabela de leituras}
+\begin{lstlisting}
+CREATE TABLE leituras (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dispositivo_id INTEGER,
+    temperatura REAL,
+    umidade REAL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (dispositivo_id)
+        REFERENCES dispositivos(id)
+);
+\end{lstlisting}
+
+\subsection*{Passo 3: inspecionar a estrutura e o relacionamento}
+\begin{lstlisting}
+PRAGMA table_info('dispositivos');
+PRAGMA table_info('leituras');
+PRAGMA foreign_key_list('leituras');
+\end{lstlisting}
+\begin{lstlisting}
+SELECT name, sql
+FROM sqlite_master
+WHERE type = 'table'
+  AND name IN ('dispositivos', 'leituras');
+\end{lstlisting}
+\questoes{Qual a finalidade da chave primária? Por que \texttt{leituras} tem uma chave estrangeira? O que a restrição \texttt{CHECK} permite?}
+
+\atividade{2}{Inserção de dados (DML)}
+\textbf{Objetivo:} cadastrar equipamentos e simular medições de sensores.
+
+\subsection*{Passo 1: cadastrar três dispositivos}
+\begin{lstlisting}
+INSERT INTO dispositivos (nome, localizacao, status)
+VALUES
+('ESP32-Lab-01', 'Laboratorio Central', 'ATIVO'),
+('ESP32-Server-02', 'Sala de Servidores', 'ATIVO'),
+('ESP32-Externo-03', 'Area Externa', 'MANUTENCAO');
+\end{lstlisting}
+
+\subsection*{Passo 2: inserir sete leituras}
+\begin{lstlisting}
+INSERT INTO leituras
+(dispositivo_id, temperatura, umidade, timestamp)
+VALUES
+(1, 24.5, 60.2, '2026-11-06 08:00:00'),
+(1, 25.8, 58.5, '2026-11-06 08:30:00'),
+(1, 26.2, 57.0, '2026-11-06 09:00:00'),
+(2, 19.5, 45.0, '2026-11-06 08:00:00'),
+(2, 19.8, 44.8, '2026-11-06 08:30:00'),
+(2, 20.1, 44.2, '2026-11-06 09:00:00'),
+(3, 31.0, 75.0, '2026-11-06 08:00:00');
+\end{lstlisting}
+
+\subsection*{Passo 3: conferir registros}
+\begin{lstlisting}
+SELECT * FROM dispositivos;
+SELECT * FROM leituras;
+\end{lstlisting}
+\noindent\textbf{Resultado esperado:} 3 dispositivos e 7 leituras.\par
+\questoes{Explique como \texttt{dispositivo\_id} relaciona uma medição ao equipamento correspondente.}
+
+\atividade{3}{Consultas básicas (DQL)}
+\textbf{Objetivo:} utilizar \texttt{SELECT}, \texttt{WHERE} e \texttt{ORDER BY}.
+
+\subsection*{Consulta A: dispositivos ativos}
+\begin{lstlisting}
+SELECT id, nome, localizacao
+FROM dispositivos
+WHERE status = 'ATIVO';
+\end{lstlisting}
+\noindent\textbf{Resultado esperado:} 2 dispositivos.\par
+
+\subsection*{Consulta B: leituras acima de 25 graus Celsius}
+\begin{lstlisting}
+SELECT *
+FROM leituras
+WHERE temperatura > 25;
+\end{lstlisting}
+\noindent\textbf{Resultado esperado:} 3 leituras.\par
+
+\subsection*{Consulta C: temperaturas em ordem decrescente}
+\begin{lstlisting}
+SELECT dispositivo_id, temperatura, timestamp
+FROM leituras
+ORDER BY temperatura DESC;
+\end{lstlisting}
+\questoes{Qual é a diferença entre \texttt{WHERE} e \texttt{ORDER BY}? Identifique a menor e a maior temperatura registrada.}
+
+\atividade{4}{Relacionamento entre tabelas (JOIN)}
+\textbf{Objetivo:} combinar cadastro de dispositivos com suas medições.
+\begin{lstlisting}
+SELECT
+    d.nome AS dispositivo,
+    d.localizacao,
+    l.temperatura,
+    l.umidade,
+    l.timestamp
+FROM dispositivos d
+JOIN leituras l
+    ON d.id = l.dispositivo_id
+ORDER BY l.timestamp DESC;
+\end{lstlisting}
+\questoes{Por que \texttt{JOIN} é necessário? O que ocorre se não houver um dispositivo correspondente a uma leitura em um \texttt{INNER JOIN}?}
+
+\atividade{5}{Funções de agregação}
+\textbf{Objetivo:} calcular média, máximo, mínimo e quantidade de medições.
+\begin{lstlisting}
+SELECT
+    d.nome,
+    ROUND(AVG(l.temperatura), 2) AS temp_media,
+    MAX(l.temperatura) AS temp_maxima,
+    MIN(l.temperatura) AS temp_minima,
+    COUNT(l.id) AS total_leituras
+FROM dispositivos d
+LEFT JOIN leituras l
+    ON d.id = l.dispositivo_id
+GROUP BY d.id, d.nome;
+\end{lstlisting}
+
+\begin{center}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Dispositivo & Média ($^\circ$C) & Máxima ($^\circ$C) & Leituras\\
+\midrule
+ESP32-Lab-01 & 25,50 & 26,2 & 3\\
+ESP32-Server-02 & 19,80 & 20,1 & 3\\
+ESP32-Externo-03 & 31,00 & 31,0 & 1\\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent\textit{Nota:} a consulta também retorna a coluna de temperatura mínima.\par
+\questoes{Qual equipamento possui maior temperatura média? E qual apresenta a menor?}
+
+\atividade{6}{Atualização e exclusão de registros (DML)}
+\textbf{Objetivo:} utilizar \texttt{UPDATE} e \texttt{DELETE} com condições.
+
+\subsection*{Passo 1: atualizar o status}
+\begin{lstlisting}
+UPDATE dispositivos
+SET status = 'ATIVO'
+WHERE id = 3;
+
+SELECT * FROM dispositivos;
+\end{lstlisting}
+
+\subsection*{Passo 2: inserir e excluir uma leitura de teste}
+\begin{lstlisting}
+INSERT INTO leituras
+(dispositivo_id, temperatura, umidade)
+VALUES (1, 35.0, 50.0);
+
+SELECT * FROM leituras
+WHERE temperatura = 35.0;
+\end{lstlisting}
+\begin{lstlisting}
+DELETE FROM leituras
+WHERE dispositivo_id = 1
+  AND temperatura = 35.0
+  AND umidade = 50.0;
+
+SELECT * FROM leituras;
+\end{lstlisting}
+\noindent\textbf{Verificação:} após excluir a leitura de teste, a tabela deve voltar a conter 7 leituras.\par
+\questoes{Qual o papel de \texttt{WHERE} em \texttt{UPDATE} e \texttt{DELETE}? O que pode acontecer sem essa cláusula?}
+
+\atividade{7}{Consultas avançadas: CTEs e funções de janela}
+\textbf{Objetivo:} analisar registros históricos de cada equipamento.
+
+\subsection*{Consulta A: última medição de cada dispositivo}
+\begin{lstlisting}
+WITH leituras_rankeadas AS (
+    SELECT
+        d.nome AS dispositivo,
+        d.localizacao,
+        l.temperatura,
+        l.umidade,
+        l.timestamp,
+        ROW_NUMBER() OVER (
+            PARTITION BY l.dispositivo_id
+            ORDER BY l.timestamp DESC, l.id DESC
+        ) AS rn
+    FROM dispositivos d
+    JOIN leituras l
+        ON d.id = l.dispositivo_id
+)
+SELECT
+    dispositivo, localizacao,
+    temperatura, umidade, timestamp
+FROM leituras_rankeadas
+WHERE rn = 1;
+\end{lstlisting}
+
+\subsection*{Consulta B: variação entre temperaturas consecutivas}
+\begin{lstlisting}
+SELECT
+    d.nome AS dispositivo,
+    l.timestamp,
+    l.temperatura AS temp_atual,
+    LAG(l.temperatura, 1) OVER (
+        PARTITION BY l.dispositivo_id
+        ORDER BY l.timestamp, l.id
+    ) AS temp_anterior,
+    ROUND(
+        l.temperatura -
+        LAG(l.temperatura, 1) OVER (
+            PARTITION BY l.dispositivo_id
+            ORDER BY l.timestamp, l.id
+        ), 2
+    ) AS variacao_temperatura
+FROM leituras l
+JOIN dispositivos d
+    ON l.dispositivo_id = d.id;
+\end{lstlisting}
+
+\subsection*{Consulta C: temperatura média superior a 22 graus Celsius}
+\begin{lstlisting}
+WITH medias_dispositivos AS (
+    SELECT
+        d.id,
+        d.nome AS dispositivo,
+        AVG(l.temperatura) AS media_temp
+    FROM dispositivos d
+    JOIN leituras l
+        ON d.id = l.dispositivo_id
+    GROUP BY d.id, d.nome
+)
+SELECT
+    dispositivo,
+    ROUND(media_temp, 2) AS media_temperatura
+FROM medias_dispositivos
+WHERE media_temp > 22.0;
+\end{lstlisting}
+\questoes{O que é uma CTE? Como diferem \texttt{ROW\_NUMBER()} e \texttt{LAG()}? Que utilidade teriam em um sistema de sensores?}
+
+\atividade{8}{Controle de transações (TCL)}
+\textbf{Objetivo:} comparar \texttt{ROLLBACK} e \texttt{COMMIT}.
+
+\subsection*{Passo 1: alteração desfeita}
+\begin{lstlisting}
+BEGIN TRANSACTION;
+
+UPDATE dispositivos
+SET status = 'INATIVO'
+WHERE id = 1;
+
+SELECT * FROM dispositivos WHERE id = 1;
+
+ROLLBACK;
+
+SELECT * FROM dispositivos WHERE id = 1;
+\end{lstlisting}
+
+\subsection*{Passo 2: alteração confirmada}
+\begin{lstlisting}
+BEGIN TRANSACTION;
+
+UPDATE dispositivos
+SET status = 'ATIVO'
+WHERE id = 1;
+
+COMMIT;
+\end{lstlisting}
+\questoes{Explique as diferenças entre \texttt{COMMIT} e \texttt{ROLLBACK}.}
+
+\section{Exercícios para os alunos}
+Resolva sem consultar soluções prontas. Registre o comando SQL e o resultado de cada exercício.
+\begin{enumerate}
+\item Listar todos os dispositivos, exibindo somente nome e localização.
+\item Consultar leituras com temperatura superior a 20~$^\circ$C.
+\item Ordenar as leituras da menor para a maior umidade.
+\item Contar a quantidade de leituras por dispositivo.
+\item Calcular a temperatura média de todas as leituras.
+\item Mostrar dispositivos cuja temperatura máxima ultrapassou 25~$^\circ$C.
+\item Inserir um quarto equipamento denominado \texttt{ESP32-Lab-04}.
+\item Inserir três medições para o novo dispositivo.
+\item Calcular a temperatura média do quarto dispositivo.
+\item Elaborar uma consulta que mostre o nome de cada dispositivo e sua última medição.
+\end{enumerate}
+
+\section{Critérios de avaliação}
+\begin{center}
+\begin{tabular}{p{11.2cm}r}
+\toprule
+Critério & Pontuação\\
+\midrule
+Criação e estruturação das tabelas & 2,0\\
+Inserção, atualização e exclusão de dados & 2,0\\
+Consultas básicas e relacionamentos & 2,0\\
+Funções de agregação & 1,5\\
+CTEs e funções de janela & 1,5\\
+Organização e apresentação dos resultados & 1,0\\
+\midrule
+\textbf{Total} & \textbf{10,0}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Orientações para entrega}
+Entregar um relatório com identificação do aluno ou da dupla, comandos SQL executados, capturas de tela dos resultados no SQLite Online e uma breve interpretação dos dados. Entregar também, sempre que solicitado pelo docente, o arquivo \texttt{atividade\_iot.sql} com os comandos comentados.
+
+\noindent\textbf{Observação:} o SQLite não implementa o gerenciamento tradicional de usuários e permissões de esquema por \texttt{GRANT} e \texttt{REVOKE}. Por esse motivo, DCL não integra os exercícios executáveis. Os comandos de controle de transação apresentados pertencem a TCL.
+
+\end{document}
